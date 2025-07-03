@@ -1,19 +1,10 @@
 import json
 import os
+from datetime import datetime
 
 
 def main():
-    #.. MENU
-    def create_menu():
-        print("\nMENU: ")
-        print("-Add task -> 1")
-        print("-Delete task -> 2")
-        print("-Update task -> 3")
-        print("-Mark status (in-progress/done) -> 4")
-        print("-List all tasks by status -> 5")
-        print("0 -> Exit")
-
-    create_menu()
+    
 
     def check_json(name):
         return os.path.isfile(name)
@@ -53,7 +44,7 @@ def main():
             "ID": id,
             "Description": None,
             "Status": None,
-            "CreatedAt": None,
+            "CreatedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "UpdatedAt": None
             }
         data.append(task_to_add)
@@ -64,30 +55,33 @@ def main():
         write_json(data)
 
 
-    def delete_task(task_to_delete):
+    def delete_task(task_id_to_delete):
         data = read_json()
-        data = [task for task in data if task.get("Task") != task_to_delete]
+        data = [task for task in data if task.get("ID") != task_id_to_delete]
 
+        print(f"Task deleted successfully (ID: {task_id_to_delete})")
         write_json(data)
     
-    def update_task(task_to_update, new_task):
+    def update_task(task_id, new_task):
         try: 
-            with open("data.json", "r") as f:
-                tasks = json.load(f)
+            data = read_json()
         except:
-            tasks = []
-        for task in tasks:
-            if task.get("Task") == task_to_update:
+            data = []
+        for task in data:
+            if task.get("ID") == task_id:
                 task["Task"] = new_task
-        with open("data.json", "w") as f:
-            json.dump(tasks, f, indent=4)
+                task["UpdatedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    def mark_task(task_to_mark, status):
+        print(f"Task updated succesfully (ID: {task_id})")
+        write_json(data)
+
+    def mark_task(task_id_to_mark, status):
         data = read_json()
         for task in data:
-            if task.get("Task").lower() == task_to_mark.lower():
+            if task.get("ID") == task_id_to_mark:
                 task["Status"] = status
 
+        print(f"Task marked succesfully (ID: {task_id_to_mark})")
         write_json(data)
 
     def list_tasks():
@@ -96,43 +90,71 @@ def main():
             print(
                 f"\nTask: {task["Task"]}\n"
                 f"ID: {task["ID"]}\n"
-                f"Status: {task["Status"]}\n"
+                f"Status: {task["Status"]}"
             )
+    def list_tasks_by_status(status):
+        data = read_json()
+        for task in data:
+            if task["Status"] == status:
+                print(
+                    f"\nTask: {task["Task"]}\n"
+                    f"ID: {task["ID"]}\n"
+                    f"Status: {task["Status"]}"
+                )
 
 
 
 
 
-    # ---- CHECK OPTIONS HERE ---- # 
+    # ---- CHECK COMMANDS HERE ---- # 
 
-    def check_option(op):
+    def check_command(command):
         #.. if json file isn`t created we create it here so we don`t have to do it every time
         if not check_json("data.json"):
             create_json()
 
-        if op == 1:
-            new_task = input("Enter the task you want to add to your tracker: ")
+        
+
+        if command.startswith("add"):
+            new_task = command[4:]
             add_task(new_task)
 
+        elif command.startswith("delete"):
+            task_id_to_delete = int(command[7])
+            delete_task(task_id_to_delete)
 
-        elif op == 2:
-            task_to_delete = input("Enter the task you want to delete: ")
-            delete_task(task_to_delete)
-        elif op == 3:
-            task_to_update = input("Enter the task you want to update: ")
-            new_task = input("Which is the new task?\n")
-            update_task(task_to_update, new_task)
+        elif command.startswith("update"):
+            try:
+                task_to_update = command[7:].split(maxsplit=1)
+                task_id = int(task_to_update[0])
+                new_task = task_to_update[1]
+                update_task(task_id, new_task)
+            except:
+                print("Error, please to update a task do it like this: update 'ID' 'New task'")
 
-        elif op == 4:
-            task_to_mark = input("Task to mark: ")
-            status = input("To do, done or in-progress: ")
-            mark_task(task_to_mark, status)
+        elif command.startswith("mark"):
+            try:
+                task_to_mark = command[4:].split(maxsplit=1)
+                new_status = task_to_mark[0]
+                task_id = int(task_to_mark[1])
+                mark_task(task_id, new_status)
+            except:
+                print("Error, to mark a task do it like this: mark 'status' 'id'")
 
-        elif op == 5:
-            list_tasks()
+
+        elif command.startswith("list"):
+            if len(command) == 4:
+                list_tasks()
+            else:
+                try:
+                    status = command[4:].strip()
+                    print(status)
+                    list_tasks_by_status(status)
+                except:
+                    print("Error, to list by status do it like this: list 'to-do'...")
 
 
-        elif op == 0:
+        elif command == "0":
             print("Bye!")
             return False
 
@@ -141,8 +163,8 @@ def main():
 
 
     #.. read input arguments from the user
-    option = int(input("\nWhat do you want to do?\n"))
-    return check_option(option)
+    command = input("--> ").strip()
+    return check_command(command)
 
 
 
