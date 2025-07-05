@@ -16,9 +16,12 @@ def main():
 
     response = requests.get(url)
 
+    #.. to get a better view of the data I created the data in a .json file (not necessary)
+    #.. with open("data.json", "w") as f:
+    #..     json.dump(data, f, indent=4)
     data = response.json()
 
- 
+
     for event in data:
         type = event["type"]
         repo_name = event["repo"]["name"]
